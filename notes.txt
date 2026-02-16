@@ -14,9 +14,16 @@ H1, H2.1, H2.3, H4.3, H4.4, H5.1, H5.5, H6.6
 Ideias:
 
 Ter isto separado pelos mesmos itens que a Professora tem:
+
+Architectures;
+Processes;
+Communication;
 Coordination;
 Naming;
 Consistency and Replication;
 Fault Tolerance;
 Security;
 
+
+Apresentação (baseada em Essay):
+Introdução + 8 Topicos + Proposta
