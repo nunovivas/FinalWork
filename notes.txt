@@ -25,5 +25,5 @@ Fault Tolerance;
 Security;
 
 
-Apresentação (baseada em Essay):
+Apresentação (baseada em Essay e no conteudo de theme (contexto)):
 Introdução + 8 Topicos + Proposta (pros & cons)
