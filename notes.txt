@@ -27,3 +27,6 @@ Security;
 
 Apresentação (baseada em Essay e no conteudo de theme (contexto)):
 Introdução + 8 Topicos + Proposta (pros & cons)
+
++Notes:
+Focar uma parte nos tradeoffs como explicado na parte final do resumo.
