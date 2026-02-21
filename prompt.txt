@@ -1,0 +1,13 @@
+IN essay.tex write me a draft based on this sections:
+Architectures;
+Processes;
+Communication;
+Coordination;
+Naming;
+Consistency and Replication;
+Fault Tolerance;
+Security;
+This is for a distributed systems class of the masters degree in IT engineering of the FCT in the University of algarve.
+The work will be done by Nuno Vivas and Francisco Santos.
+The sections should have each its ownfile. also future bibliography should be in references.bib
+Write the skeleton of the essay so i can start to work on it.

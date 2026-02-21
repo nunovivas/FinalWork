@@ -1,0 +1,60 @@
+\documentclass[conference]{IEEEtran}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage{csquotes}
+\usepackage[hidelinks]{hyperref}
+
+\title{Distributed Systems Essay}
+
+\author{
+\IEEEauthorblockN{Nuno Vivas and Francisco Santos}
+\IEEEauthorblockA{Master's Degree in IT Engineering, FCT -- University of Algarve}
+}
+
+\begin{document}
+
+\begin{titlepage}
+\thispagestyle{empty}
+\centering
+
+{\LARGE \textbf{Distributed Systems Essay} \par}
+\vspace{1.5cm}
+
+{\large Nuno Vivas \par}
+{\large Francisco Santos \par}
+\vspace{0.8cm}
+
+{\large Master's Degree in IT Engineering, FCT -- University of Algarve \par}
+\vfill
+
+{\large \today \par}
+\end{titlepage}
+
+\tableofcontents
+\newpage
+
+\begin{abstract}
+This document provides the initial draft structure for a distributed systems essay, covering core topics from architectures to security. Each section is organized in a separate file to support collaborative writing and incremental refinement.
+\end{abstract}
+
+\input{sections/introduction}
+\input{sections/system_models}
+\input{sections/architectures}
+\input{sections/processes}
+\input{sections/communication}
+\input{sections/coordination}
+\input{sections/naming}
+\input{sections/consistency_replication}
+\input{sections/scalability_performance}
+\input{sections/fault_tolerance}
+\input{sections/security}
+\input{sections/conclusion}
+
+\newpage
+\nocite{*}
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+
+\end{document}
