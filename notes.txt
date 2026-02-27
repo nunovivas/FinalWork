@@ -20,13 +20,18 @@ Processes;
 Communication;
 Coordination;
 Naming;
-Consistency and Replication;
+Consistency and Replication; 
 Fault Tolerance;
 Security;
 
 
-Apresentação (baseada em Essay e no conteudo de theme (contexto)):
+Apresentação:
 Introdução + 8 Topicos + Proposta (pros & cons)
 
 +Notes:
 Focar uma parte nos tradeoffs como explicado na parte final do resumo.
+
+- Architectures; Processes; Communication; (juntos)
+- Naming (qual é a infraestrutura? [DNS, etc])
+- Consistency and Replication; Fault Tolerance; (juntos)
+- Security; (Para não tecnicos e o requisito de anonimato)
