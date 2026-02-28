@@ -1,0 +1,54 @@
+Presentation:
+
+- The Problem framing & success criteria
+  - Why pub-sub, explain how we see the client, context, etc
+  - How to keep latency low, good throughput, durability, correctness and privacy
+  - fast market churn, liability for missed notifications
+
+- Pub-sub models
+  - Small comparison between companions
+  - Topic-based vs content-based tradeoff
+    - topic-based efficient; content-based expressive but higher overhead
+  - Introduce the hybrid approach (coarse topics + fine filters) (Paper many faces of pub-sub)
+
+- Our proposal
+  - Ingestion/outbox -> event bus -> matchers -> notification pipeline.
+  - What is stateful vs stateless, where scaling happens.
+
+- Architectures / processes / communication
+  - Diagrams
+  - Backpressure, retries, dead-letter handling
+  - Why “decoupling” matters for scaling
+
+- Naming & infrastructure
+  - Topic naming scheme (geo/category), versioning, schema evolution
+  - Service discovery & DNS (public API vs internal mesh)
+  - Identifiers to avoid leaking users data in logs/events
+
+- Consistency, replication, fault tolerance
+  - strong reliability costs overhead (logging, retransmit) 
+  - Delivery semantics: at-least-once + dedupe vs exactly-once.
+  - Multi-region replication, failover, disaster recovery.
+
+- Scaling story & hotspots
+  - Fanout scale: “many subscriptions” vs “many listings”.
+  - Partitioning strategy (geo shards), consumer groups, autoscaling.
+  - Cold-start & rebalancing behavior.
+
+- Technology choice
+  - Kafka: durable log, replay, large scale fanout; heavier ops.
+  - RabbitMQ: routing patterns, queues, per-message ack; can get complex at huge fanout.
+  - NATS: low latency pubsub, simpler ops; persistence via JetStream (if used).
+
+- Security & privacy & Anonymous matching
+  - “What we protect”: data-in-transit, data-at-rest, access control, auditing.
+  - Threats: account compromise, insider access, cloud operator visibility.
+  - Privacy-preserving matching: Bloom filters
+  - PF + Shell Game to enlarge anonymity sets / defeat traffic analysis (Anon paper)
+
+
+For essay, I propose following the same ideas, where each topic can be more discussed (more details in the kafka, rabbit, nats comparison, etc).
+Where we can talk more about Scalling:
+  - Workload model: listings/sec vs subscribers, skew by region, burstiness.
+  - Bottleneck analysis: matcher CPU, storage I/O, fanout.
+  - Horizontal scaling limits: partition count, consumer rebalancing, hotspot partitions.
