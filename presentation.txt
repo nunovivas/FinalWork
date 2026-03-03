@@ -47,8 +47,16 @@ Presentation:
   - PF + Shell Game to enlarge anonymity sets / defeat traffic analysis (Anon paper)
 
 
-For essay, I propose following the same ideas, where each topic can be more discussed (more details in the kafka, rabbit, nats comparison, etc).
+
+
+------------
+
+For essay, we propose following the same ideas, 
+where each topic can be more discussed (more details in the kafka, 
+rabbit, nats comparison, etc).
 Where we can talk more about Scalling:
   - Workload model: listings/sec vs subscribers, skew by region, burstiness.
   - Bottleneck analysis: matcher CPU, storage I/O, fanout.
   - Horizontal scaling limits: partition count, consumer rebalancing, hotspot partitions.
+
+
