@@ -47,8 +47,6 @@ Presentation:
   - PF + Shell Game to enlarge anonymity sets / defeat traffic analysis (Anon paper)
 
 
-
-
 ------------
 
 For essay, we propose following the same ideas, 

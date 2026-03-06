@@ -1,0 +1,10 @@
+Professor notes:
+ecendo algumas considerações sobre o ponto de situação, sugeriria que incluíssem:
+- a caracterização da aplicação pretendida em função do exemplo funda.nl
+- uma proposta de avaliação do desempenho de cada alternativa em função do tempo de notificação, para satisfazer "Their unique selling point is that a customer can subscribe to new property that matches their wishes such that within only a few seconds they will receive a notification when that property comes available."
+- gostaria que a abordagem da solução por tópico ou conteúdo fosse aprofundada.
+ 
+Gostaria que um de vós se dedicasse à questão da escalabilidade e outro de vós à anonimidade das correspondências encontradas.
+
+
+Ter metricas para o trafego;
