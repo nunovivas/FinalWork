@@ -1,0 +1,55 @@
+\subsection{Privacy and Data Minimization}
+
+Since notifications are delivered directly to clients through a publish-subscribe system, it is essential to carefully control which information is exposed at the messaging layer. In particular, systems based on message brokers such as RabbitMQ should be designed under the assumption that both message content and metadata may be observable by intermediary components.
+
+From a privacy perspective, it is important to distinguish between \textit{confidentiality} and \textit{anonymity}. Confidentiality refers to protecting the content of messages from unauthorized access, whereas anonymity aims to hide the identities of communicating parties and their relationships. In publish-subscribe systems, both aspects are relevant, as not only message payloads but also metadata (such as publishers, subscribers, and routing information) can leak sensitive information.
+
+In the context of this system, the primary goal is to ensure \textbf{data minimization} and \textbf{pseudonymization} of messages before they are published to RabbitMQ. Rather than attempting to achieve full anonymity—which typically requires decentralized architectures and advanced cryptographic techniques—the system focuses on limiting the exposure of sensitive information within a centralized broker model.
+
+\paragraph{Sanitized Event Representation}
+
+Messages published to RabbitMQ should not directly mirror the internal data model. Instead, they should follow a dedicated \textit{notification event schema} that includes only the information strictly required for routing and client consumption.
+
+In particular:
+\begin{itemize}
+    \item Listings (houses) are represented by identifiers rather than embedding owner information
+    \item The mapping between a listing and its owner remains exclusively within internal services
+    \item Only public or non-sensitive attributes (e.g., location, price range) are included in the message
+\end{itemize}
+
+This transformation step ensures that sensitive user data is never exposed to the messaging infrastructure.
+
+\paragraph{Use of Pseudonymous Identifiers}
+
+Each listing is assigned an identifier that is safe to expose externally. While this identifier can be resolved internally to retrieve additional information, it does not itself reveal the identity of the associated user.
+
+This approach corresponds to \textit{pseudonymization}: data remains linkable within the system but is not directly identifying outside trusted components. Although this does not provide full anonymity, it significantly reduces the risk of data leakage at the messaging layer.
+
+\paragraph{Separation of Routing and Personal Data}
+
+RabbitMQ headers and message payloads should contain only the information necessary for routing and notification delivery. In particular:
+\begin{itemize}
+    \item Headers are used exclusively for routing attributes such as \texttt{country}, \texttt{city}, \texttt{town}, and \texttt{price\_bucket}
+    \item Personal or identifying information must not be included in headers or routing keys
+    \item Message payloads should contain only client-safe data (e.g., listing ID, public attributes, and display information)
+\end{itemize}
+
+This separation ensures that routing decisions are based solely on non-sensitive attributes, reducing the exposure of private data.
+
+\paragraph{Limitations of Centralized Pub/Sub Architectures}
+
+As highlighted in research on anonymous publish-subscribe systems, centralized broker-based architectures inherently limit the level of anonymity that can be achieved. A central broker can observe communication patterns, including which producers publish messages and which consumers receive them. This metadata may allow inference of relationships even if message content is sanitized.
+
+Therefore, while the proposed design reduces data exposure, it does not provide strong anonymity guarantees in the formal sense. Achieving such guarantees would require more complex mechanisms, such as distributed broker overlays, cryptographic routing, or techniques to obscure communication patterns.
+
+\paragraph{Design Implications}
+
+Given these constraints, the system adopts the following principles:
+\begin{itemize}
+    \item Minimize data published to the broker (data minimization)
+    \item Avoid exposing direct identifiers (pseudonymization)
+    \item Separate internal data models from external event representations
+    \item Treat broker-visible metadata as potentially sensitive
+\end{itemize}
+
+In summary, RabbitMQ is used strictly as a transport and routing layer for sanitized notification events. Sensitive data remains confined to internal services, and only the minimal information required for routing and client notification is exposed. This approach aligns with privacy-aware system design, while acknowledging the limitations of centralized publish-subscribe infrastructures in providing full anonymity.

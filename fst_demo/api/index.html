@@ -1,0 +1,287 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>House Notifications</title>
+</head>
+<body>
+  <h1>House Notifications</h1>
+
+  <h2>Login</h2>
+  <form id="login-form">
+    <label>Username: <input type="text" name="username" required placeholder="e.g. alice"></label>
+    <button type="submit">Login / Register</button>
+  </form>
+  <p id="login-status">Not logged in.</p>
+
+  <hr>
+
+  <h2>Add House</h2>
+  <form id="house-form">
+    <label>Price: <input type="number" name="price" required min="1"></label><br>
+    <label>City: <input type="text" name="city" required></label><br>
+    <label>Region: <input type="text" name="region" required></label><br>
+    <label>Country: <input type="text" name="country" required></label><br>
+    <label>Topology: <input type="text" name="topology" required placeholder="e.g. T2"></label><br>
+    <label>Description: <input type="text" name="description" required></label><br>
+    <button type="submit">Create House</button>
+  </form>
+  <p id="house-msg"></p>
+
+  <hr>
+
+  <h2>Add Filter</h2>
+  <form id="filter-form">
+    <label>City: <input type="text" name="city" required></label><br>
+    <label>Region: <input type="text" name="region" required></label><br>
+    <label>Country: <input type="text" name="country" required></label><br>
+    <label>Topology: <input type="text" name="topology" required placeholder="e.g. T2"></label><br>
+    <fieldset>
+      <legend>Price (use bucket OR min/max)</legend>
+      <label>Price bucket: <input type="text" name="price_bucket" placeholder="e.g. 100000_200000"></label><br>
+      <label>Min price: <input type="number" name="min_price" min="0"></label><br>
+      <label>Max price: <input type="number" name="max_price" min="0"></label><br>
+    </fieldset>
+    <button type="submit">Create Filter</button>
+  </form>
+  <p id="filter-msg"></p>
+
+  <hr>
+
+  <h2>Houses <button onclick="loadHouses()">Refresh</button></h2>
+  <table id="houses-table" border="1" cellpadding="4">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Price</th>
+        <th>Price Bucket</th>
+        <th>City</th>
+        <th>Region</th>
+        <th>Country</th>
+        <th>Topology</th>
+        <th>Description</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody id="houses-body"></tbody>
+  </table>
+
+  <hr>
+
+  <h2>Live Notifications <span id="ws-status" style="font-size:0.8em;color:gray">(connecting...)</span></h2>
+  <div id="notifications" style="font-family:monospace;background:#f4f4f4;padding:8px;min-height:60px;max-height:300px;overflow-y:auto">
+    <em>Waiting for messages...</em>
+  </div>
+
+  <hr>
+
+  <h2>Filters <button onclick="loadFilters()">Refresh</button></h2>
+  <table id="filters-table" border="1" cellpadding="4">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>User</th>
+        <th>Queue</th>
+        <th>City</th>
+        <th>Region</th>
+        <th>Country</th>
+        <th>Topology</th>
+        <th>Price Range</th>
+      </tr>
+    </thead>
+    <tbody id="filters-body"></tbody>
+  </table>
+
+  <script>
+    let currentUser = null;
+
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      const res = await fetch('/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: fd.get('username') }),
+      });
+      const data = await res.json();
+      const status = document.getElementById('login-status');
+      if (res.ok) {
+        currentUser = data;
+        status.textContent = `Logged in as: ${currentUser.username} (id: ${currentUser.id})`;
+        e.target.reset();
+        connectWS();
+      } else {
+        status.textContent = 'Error: ' + data.error;
+      }
+    });
+
+    async function loadHouses() {
+      const res = await fetch('/houses');
+      const data = await res.json();
+      const tbody = document.getElementById('houses-body');
+      tbody.innerHTML = '';
+      for (const h of data.houses) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${h.id}</td>
+          <td>${h.price}</td>
+          <td>${h.price_bucket}</td>
+          <td>${h.location.city}</td>
+          <td>${h.location.region}</td>
+          <td>${h.location.country}</td>
+          <td>${h.topology}</td>
+          <td>${h.description}</td>
+          <td><button onclick="deleteHouse('${h.id}')">Delete</button></td>
+        `;
+        tbody.appendChild(tr);
+      }
+    }
+
+    async function loadFilters() {
+      const res = await fetch('/filters');
+      const data = await res.json();
+      const tbody = document.getElementById('filters-body');
+      tbody.innerHTML = '';
+      for (const f of data.filters) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${f.id}</td>
+          <td>${f.user.username} (${f.user_id})</td>
+          <td>${f.queue_name}</td>
+          <td>${f.location.city}</td>
+          <td>${f.location.region}</td>
+          <td>${f.location.country}</td>
+          <td>${f.topology}</td>
+          <td>${f.min_price} – ${f.max_price}</td>
+        `;
+        tbody.appendChild(tr);
+      }
+    }
+
+    async function deleteHouse(id) {
+      const res = await fetch('/houses/' + id, { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok) {
+        alert('Error: ' + data.error);
+      }
+      loadHouses();
+    }
+
+    document.getElementById('house-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      const body = {
+        price:       parseInt(fd.get('price'), 10),
+        topology:    fd.get('topology'),
+        description: fd.get('description'),
+        location: {
+          city:    fd.get('city'),
+          region:  fd.get('region'),
+          country: fd.get('country'),
+        },
+      };
+      const res = await fetch('/create-house', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      const msg = document.getElementById('house-msg');
+      if (res.ok) {
+        msg.textContent = 'House created: ' + data.id;
+        e.target.reset();
+        loadHouses();
+      } else {
+        msg.textContent = 'Error: ' + data.error;
+      }
+    });
+
+    document.getElementById('filter-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!currentUser) {
+        document.getElementById('filter-msg').textContent = 'Error: you must log in first';
+        return;
+      }
+      const fd = new FormData(e.target);
+      const body = {
+        user_id:  currentUser.id,
+        topology: fd.get('topology'),
+        location: {
+          city:    fd.get('city'),
+          region:  fd.get('region'),
+          country: fd.get('country'),
+        },
+      };
+      const bucket = fd.get('price_bucket').trim();
+      if (bucket) {
+        body.price_bucket = bucket;
+      } else {
+        body.min_price = parseInt(fd.get('min_price'), 10) || 0;
+        body.max_price = parseInt(fd.get('max_price'), 10) || 0;
+      }
+      const res = await fetch('/create-filter', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      const msg = document.getElementById('filter-msg');
+      if (res.ok) {
+        msg.textContent = 'Filter created: ' + data.id;
+        e.target.reset();
+        loadFilters();
+      } else {
+        msg.textContent = 'Error: ' + data.error;
+      }
+    });
+
+    loadHouses();
+    loadFilters();
+
+    const wsStatus = document.getElementById('ws-status');
+    const notifBox = document.getElementById('notifications');
+    let activeWS = null;
+
+    function connectWS() {
+      if (!currentUser) return;
+      if (activeWS) {
+        activeWS.onclose = null; // prevent retry loop from old socket
+        activeWS.close();
+      }
+      const ws = new WebSocket(`ws://localhost:8081/ws?user_id=${currentUser.id}`);
+      activeWS = ws;
+
+      ws.onopen = () => {
+        wsStatus.textContent = '(connected)';
+        wsStatus.style.color = 'green';
+      };
+
+      ws.onclose = () => {
+        if (ws !== activeWS) return; // stale socket, ignore
+        wsStatus.textContent = '(disconnected — retrying in 3s)';
+        wsStatus.style.color = 'red';
+        if (currentUser) setTimeout(connectWS, 3000);
+      };
+
+      ws.onmessage = (event) => {
+        const n = JSON.parse(event.data);
+        const userList = n.users && n.users.length
+          ? n.users.map(u => u.username).join(', ')
+          : 'no subscribers';
+        const h = n.house;
+        const entry = document.createElement('div');
+        entry.style.borderBottom = '1px solid #ccc';
+        entry.style.padding = '4px 0';
+        entry.innerHTML =
+          `<strong>New listing matched</strong> [${n.queue}]<br>` +
+          `&nbsp; house id: ${h.id} &nbsp; topology: ${h.topology} &nbsp; price bucket: ${h.price_bucket}<br>` +
+          `&nbsp; location: ${h.location.city}, ${h.location.region}, ${h.location.country}<br>` +
+          `&nbsp; notify: <strong>${userList}</strong>`;
+        if (notifBox.querySelector('em')) notifBox.innerHTML = '';
+        notifBox.prepend(entry);
+      };
+    }
+
+  </script>
+</body>
+</html>

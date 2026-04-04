@@ -35,3 +35,10 @@ Focar uma parte nos tradeoffs como explicado na parte final do resumo.
 - Naming (qual é a infraestrutura? [DNS, etc])
 - Consistency and Replication; Fault Tolerance; (juntos)
 - Security; (Para não tecnicos e o requisito de anonimato)
+
+
+- Cloud prices (?)
+- What should go to public classes?
+- User information should remain annonymous in case it is inside some public cloud.
+- Adjust diagram to include what is in cloud, what is in private servers
+- How will it scale

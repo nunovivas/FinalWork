@@ -1,0 +1,143 @@
+\section{Notification System Architecture}
+
+This section describes the overall architecture of the notification system, including the message routing strategy, the interaction between system components, and the privacy considerations applied to the design.
+
+\subsection{Overview}
+
+The system follows a publish-subscribe architecture, where internal services produce events that are routed through RabbitMQ and eventually delivered to clients as notifications. The architecture is designed around three main principles:
+
+\begin{itemize}
+    \item \textbf{Decoupling:} Producers and consumers are independent, communicating only through the messaging system.
+    \item \textbf{Flexible filtering:} Notifications are routed based on user-defined filters using content-based routing.
+    \item \textbf{Data minimization:} Sensitive information is removed before events are published to the broker.
+\end{itemize}
+
+Figure~\ref{fig:architecture} illustrates the full system.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\textwidth]{architecture.png}
+    \caption{Notification architecture with hybrid routing and data minimization}
+    \label{fig:architecture}
+\end{figure}
+
+\subsection{Internal Event Production}
+
+The system begins with internal services (e.g., a listing service) that generate events such as the creation or update of a listing. These services operate on the full internal data model, which includes sensitive information such as user or owner identity.
+
+This internal representation must not be directly exposed to the messaging system.
+
+\subsection{Sanitization and Event Transformation}
+
+Before an event is published to RabbitMQ, it is processed by a dedicated sanitization layer. This component is responsible for transforming internal events into \textit{notification-safe events}.
+
+The transformation includes:
+\begin{itemize}
+    \item Removing all personal or sensitive data
+    \item Replacing internal references with pseudonymous identifiers (e.g., \texttt{listing\_id})
+    \item Extracting only the attributes required for routing (e.g., city, country, price bucket)
+\end{itemize}
+
+This step enforces data minimization and ensures that the messaging layer does not expose private information.
+
+\subsection{Message Routing in RabbitMQ}
+
+After sanitization, events are published to RabbitMQ. The routing logic follows a hybrid approach combining topic-based and content-based routing.
+
+\subsubsection{Topic-based Routing (Coarse Classification)}
+
+Messages are first sent to a topic exchange using a routing key that represents the event type, such as:
+
+\begin{itemize}
+    \item \texttt{listing.created}
+    \item \texttt{listing.updated}
+    \item \texttt{listing.price\_changed}
+\end{itemize}
+
+This stage provides coarse-grained classification, separating messages based on what type of event occurred.
+
+\subsubsection{Content-based Routing (Fine-grained Filtering)}
+
+Messages are then forwarded to a header exchange, where routing decisions are made based on message attributes. These attributes are included as headers and may include:
+
+\begin{itemize}
+    \item \texttt{country}
+    \item \texttt{city}
+    \item \texttt{town}
+    \item \texttt{price\_bucket}
+\end{itemize}
+
+Queues are bound to the header exchange with specific filter conditions. Only messages matching those conditions are delivered to each queue.
+
+This mechanism allows the system to implement flexible notification filters directly at the messaging layer.
+
+\subsubsection{Hybrid Routing Benefits}
+
+The combination of topic-based and content-based routing enables a separation of concerns:
+
+\begin{itemize}
+    \item Topic routing answers: \textit{what type of event occurred?}
+    \item Content-based routing answers: \textit{which notifications should receive it?}
+\end{itemize}
+
+Although both event types may ultimately reach the same queues in simple deployments, this structure allows future evolution toward independent routing paths, improved scalability, and better workload isolation.
+
+\subsection{Queues and Notification Workers}
+
+Each queue represents a set of messages matching a particular filter. Notification workers are consumer services that subscribe to these queues.
+
+A notification worker is responsible for:
+
+\begin{itemize}
+    \item Consuming messages from a queue
+    \item Optionally enriching or formatting the notification
+    \item Delivering the notification to end users (e.g., via WebSockets or push services)
+    \item Acknowledging successful processing
+\end{itemize}
+
+RabbitMQ itself does not deliver messages to clients directly; instead, workers act as the bridge between the messaging system and user-facing delivery mechanisms.
+
+Multiple workers can consume from the same queue, allowing horizontal scaling of notification delivery.
+
+\subsection{Client Delivery}
+
+After processing, notifications are sent to client applications. Clients receive only sanitized and public-safe information, such as:
+
+\begin{itemize}
+    \item Listing identifier
+    \item Location information
+    \item Price range
+    \item Notification message
+\end{itemize}
+
+If additional details are required, clients must retrieve them through authenticated API calls.
+
+\subsection{Privacy and Trust Boundaries}
+
+The architecture enforces clear separation between different trust zones:
+
+\begin{itemize}
+    \item \textbf{Internal zone:} Contains sensitive data (e.g., user identities, ownership information)
+    \item \textbf{Broker zone:} Handles routing using sanitized data only
+    \item \textbf{Client zone:} Receives only public or non-sensitive information
+\end{itemize}
+
+The mapping between a listing and its owner remains exclusively within internal services and is never exposed to RabbitMQ or clients.
+
+This approach provides data minimization and pseudonymization, reducing the risk of data leakage. However, as discussed in Section~X, centralized publish-subscribe systems do not provide strong anonymity guarantees, as the broker may still observe communication patterns.
+
+\subsection{Scalability Considerations}
+
+The architecture supports scalability at multiple levels:
+
+\begin{itemize}
+    \item \textbf{Queue-level scaling:} Multiple workers can consume from the same queue
+    \item \textbf{Routing-level scaling:} Topic-based routing allows separation of event types into different processing paths
+    \item \textbf{Service-level scaling:} Notification workers can be independently scaled based on workload
+\end{itemize}
+
+The hybrid routing model enables future extensions where different event types (e.g., \texttt{created} vs \texttt{updated}) can be routed to separate exchanges or queues, allowing independent scaling and isolation of workloads.
+
+\subsection{Summary}
+
+The proposed architecture combines flexible message routing with strong data minimization principles. RabbitMQ is used as a routing and delivery backbone, while sensitive data remains confined to internal services. The hybrid routing approach ensures both expressiveness and scalability, making the system adaptable to evolving requirements.

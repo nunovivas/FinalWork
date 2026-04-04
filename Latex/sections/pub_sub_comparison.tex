@@ -1,0 +1,103 @@
+\section{Comparison of Kafka, RabbitMQ and Nats.io}
+
+Modern distributed systems often rely on message brokers to enable asynchronous communication between services. Instead of services calling each other directly, producers send messages to a broker, which then routes them to consumers. This architecture improves decoupling, scalability, reliability, and fault tolerance in microservice-based systems.
+
+Among the many messaging platforms available today, Apache Kafka, RabbitMQ, and NATS are three of the most widely used solutions. Each system follows a different architectural philosophy and is optimized for different types of workloads. Kafka focuses on high-throughput event streaming, RabbitMQ excels in flexible message routing and reliable queueing, and NATS prioritizes simplicity and ultra-low latency messaging.
+
+Understanding these differences is essential to choose which one fits better to our use case. The following sections describe each system in more detail.
+
+\subsection{Apache Kafka}
+
+Apache Kafka is a distributed event streaming platform designed for building real-time data pipelines and streaming applications. It is based on a distributed commit log model, where messages are stored in ordered, append-only logs called topics.
+
+In Kafka, producers publish messages to topics without requiring immediate consumption. Messages are persisted and can be replayed by consumers, which track their own position (offset) in the log. This design provides strong durability and enables use cases such as event sourcing and data replay.
+
+Kafka is optimized for:
+\begin{itemize}
+    \item High throughput and horizontal scalability
+    \item Persistent storage of events
+    \item Stream processing and real-time analytics
+\end{itemize}
+
+Its architecture makes it particularly suitable for handling large volumes of data, but it also introduces operational complexity due to clustering, partitioning, and replication.
+
+\subsection{RabbitMQ}
+
+RabbitMQ is a general-purpose message broker that implements the AMQP protocol and focuses on reliable message delivery and flexible routing.
+
+Its architecture is based on exchanges and queues:
+\begin{itemize}
+    \item Producers send messages to an exchange
+    \item The exchange routes messages to one or more queues
+    \item Consumers read messages from queues
+\end{itemize}
+
+RabbitMQ supports multiple exchange types (direct, topic, fanout, and headers), allowing complex routing logic based on routing keys or message metadata.
+
+Key characteristics include:
+\begin{itemize}
+    \item Fine-grained routing and filtering capabilities
+    \item Strong delivery guarantees (acknowledgements, retries)
+    \item Support for multiple messaging patterns (queueing, pub/sub, RPC)
+\end{itemize}
+
+RabbitMQ is often described as similar to a “post office”, where messages are routed to their intended recipients with precise control over delivery.
+
+\subsection{Nats.io}
+
+NATS is a lightweight messaging system designed for simplicity, performance, and low latency. It follows a publish-subscribe model where messages are sent to subjects and delivered to subscribers.
+
+Unlike Kafka and RabbitMQ, the core NATS system focuses on minimalism:
+\begin{itemize}
+    \item Very low latency and high throughput
+    \item Simple deployment and configuration
+    \item Subject-based routing with wildcard support
+\end{itemize}
+
+However, the base NATS system provides fewer built-in features compared to Kafka and RabbitMQ. In particular, persistence, replay, and advanced delivery guarantees are limited without additional components (such as external streaming layers).
+
+As a result, while NATS excels in performance and simplicity, it may require additional setup to match the feature set of more complex brokers.
+
+\subsection{Good use cases for each tool}
+
+Each messaging system is optimized for different scenarios, and choosing the right one depends on the system requirements.
+
+\paragraph{Apache Kafka}
+Kafka is best suited for:
+\begin{itemize}
+    \item Event streaming and real-time data pipelines
+    \item Log aggregation and analytics
+    \item Systems requiring message retention and replay
+\end{itemize}
+
+Its distributed log architecture makes it ideal for handling large-scale data streams and long-lived event storage.
+
+\paragraph{RabbitMQ}
+RabbitMQ is well suited for:
+\begin{itemize}
+    \item Task queues and background job processing
+    \item Microservice communication
+    \item Systems requiring complex routing and filtering
+\end{itemize}
+
+In particular, its exchange model (e.g., header exchanges) enables flexible message filtering based on multiple attributes, making it a strong choice for notification systems.
+
+\paragraph{Nats.io}
+NATS is best used for:
+\begin{itemize}
+    \item Lightweight microservice communication
+    \item Real-time systems with strict latency requirements
+    \item Simple publish-subscribe patterns
+\end{itemize}
+
+It is especially useful when performance and simplicity are more important than advanced messaging features.
+
+\bigskip
+
+\noindent
+
+Given the requirements of a notification system based on dynamic filters, RabbitMQ emerges as the most appropriate choice among the three technologies. Unlike Kafka, which is optimized for high-throughput event streaming, and NATS, which prioritizes simplicity and low latency with limited built-in routing capabilities, RabbitMQ provides a flexible exchange-based routing model that can efficiently handle complex filtering logic.
+
+In particular, the header exchange type allows messages to be routed based on multiple attributes contained in message headers rather than a single routing key. This enables fine-grained filtering directly at the broker level, where consumers can subscribe to messages matching specific combinations of criteria (such as event type, user preferences, or resource identifiers). This approach reduces the need for additional filtering logic in the application layer and simplifies the overall system design.
+
+Therefore, for a system where messages must be selectively delivered according to flexible and potentially evolving filters, RabbitMQ with header exchanges provides the best balance between expressiveness, reliability, and architectural simplicity.

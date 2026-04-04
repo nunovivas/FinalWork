@@ -1,0 +1,49 @@
+\subsection{Topic-based Routing}
+
+Topic-based routing delivers messages according to a routing key that represents a broad category of events. In RabbitMQ, this is typically implemented with a \texttt{topic} exchange, where producers publish messages with keys such as \texttt{listing.created}, \texttt{listing.updated}, or \texttt{listing.price\_changed}. Consumers or downstream exchanges can then subscribe to specific patterns, for example \texttt{listing.*} or \texttt{listing.price\_*}.
+
+The main advantage of topic-based routing is that it provides a simple and efficient way to classify messages by event type. It works well when the set of categories is stable and when different consumers care about different classes of events. However, topic-based routing is less suitable when messages must be filtered according to several independent attributes, since those attributes would need to be encoded into the routing key itself, which quickly becomes difficult to maintain.
+
+\subsection{Content-based Routing}
+
+Content-based routing delivers messages according to their metadata or content rather than only their routing key. In RabbitMQ, this is implemented with a \texttt{headers} exchange, where routing decisions are made by matching message headers such as \texttt{country}, \texttt{city}, \texttt{town}, or \texttt{price\_bucket}.
+
+This approach is more appropriate when the system is driven by filters. Instead of forcing all filtering dimensions into a single routing key, each attribute can be represented independently as message metadata. Consumers can then subscribe to the precise combination of attributes they are interested in.
+
+For a notification system, this model is especially useful because the decision to notify depends on the content of the event. For example, users may want notifications only for listings in a given city, below a certain price range, or within a particular area. These are naturally expressed as filters over message attributes rather than as event categories.
+
+\subsection{How We Plan to Use Content-based Routing}
+
+In our case, the notification system is fundamentally filter-based. Messages represent listing-related events, but the important part is not only that a listing was created or updated; it is whether the listing matches the criteria defined by the user.
+
+For that reason, we plan to use a \texttt{headers} exchange in RabbitMQ. Each message will carry relevant metadata in its headers, such as:
+\begin{itemize}
+    \item \texttt{country}
+    \item \texttt{city}
+    \item \texttt{town}
+    \item \texttt{price\_bucket}
+    \item other relevant listing attributes
+\end{itemize}
+
+Queues can then be bound with the desired matching rules, so that only notifications satisfying the relevant filter criteria are delivered. This makes the routing model closer to the actual problem domain: messages are routed according to the properties of the listing, rather than according to a rigid predefined topic hierarchy.
+
+\subsection{Hybrid Approach and Scalability}
+
+Although content-based routing is the best fit for the filtering requirements of our system, a hybrid approach can improve scalability. The idea is to combine:
+\begin{itemize}
+    \item \textbf{topic-based routing} for coarse-grained classification, and
+    \item \textbf{content-based routing} for fine-grained filtering
+\end{itemize}
+
+In this design, topic routing is used only to separate broad event families, such as:
+\begin{itemize}
+    \item \texttt{listing.created}
+    \item \texttt{listing.updated}
+    \item \texttt{listing.price\_changed}
+\end{itemize}
+
+After this initial classification, messages are forwarded to a \texttt{headers} exchange, which applies the actual user-facing filters based on content.
+
+This hybrid model improves scalability because it reduces the amount of traffic that must be handled by each filtering stage. If different kinds of events require different processing paths or different sets of consumers, topic-based routing can separate them early. For example, price-change notifications may be handled by one path, while new-listing notifications are handled by another. This allows the workload to be distributed more cleanly across queues, consumers, or even broker topologies.
+
+In our scenario, this means that we can start with a content-based routing model, since filtering by attributes such as city and price is the central requirement. If the system grows, we can introduce a topic stage to classify events by type before they reach the \texttt{headers} exchange. This would preserve the flexibility of filter-based notifications while making the routing topology more scalable and easier to distribute.
